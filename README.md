@@ -97,7 +97,10 @@ I create free, open-source projects for the community. While not required, donat
 ## Dependencies
 
 - [**SwiftlyS2**](https://github.com/swiftly-solution/swiftlys2): Server plugin framework for Counter-Strike 2
-- **MySQL/MariaDB Database**: Required for storing player data
+- **Database**: One of the following supported databases:
+  - **MySQL / MariaDB** - Recommended for production
+  - **PostgreSQL** - Full support
+  - **SQLite** - Great for single-server setups
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -106,11 +109,11 @@ I create free, open-source projects for the community. While not required, donat
 ## Installation
 
 1. Install [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2) on your server
-2. Configure your MySQL database in SwiftlyS2's `database.jsonc`
+2. Configure your database connection in SwiftlyS2's `database.jsonc` (MySQL, PostgreSQL, or SQLite)
 3. [Download the latest release](https://github.com/K4ryuu/K4-LevelRanks-SwiftlyS2/releases/latest)
 4. Extract to your server's `swiftlys2/plugins/` directory
 5. Configure the plugin files in `swiftlys2/configs/plugins/k4.levelranks/`
-6. Restart your server
+6. Restart your server - database tables will be created automatically
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -203,7 +206,17 @@ The plugin uses LVL Ranks compatible database tables:
 - `lvl_base_weapons` - Weapon statistics (optional)
 - `lvl_base_hits` - Hit statistics (optional)
 
-**Migration from LVL Ranks**: Simply point the plugin to your existing database - no migration needed!
+### Supported Databases
+
+| Database        | Status  | Notes                                      |
+| --------------- | ------- | ------------------------------------------ |
+| MySQL / MariaDB | ✅ Full | Recommended for multi-server setups        |
+| PostgreSQL      | ✅ Full | Alternative for existing Postgres setups   |
+| SQLite          | ✅ Full | Perfect for single-server, no setup needed |
+
+**Migration from LVL Ranks**: Simply point the plugin to your existing MySQL database - no migration needed!
+
+**Automatic Schema Management**: The plugin uses FluentMigrator to automatically create and update database tables. Optional modules (WeaponStats, HitStats) only create their tables when enabled.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

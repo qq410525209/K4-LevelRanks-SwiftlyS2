@@ -1,4 +1,5 @@
-using Dapper;
+using Dommel;
+using K4Ranks.Database.Migrations;
 using Microsoft.Extensions.Logging;
 
 namespace K4Ranks;
@@ -39,14 +40,9 @@ public sealed partial class Plugin
 		{
 			try
 			{
-				await CreateTableAsync();
-				await CreateSettingsTableAsync();
-
-				if (_modules.WeaponStatsEnabled)
-					await CreateWeaponStatsTableAsync();
-
-				if (_modules.HitStatsEnabled)
-					await CreateHitsTableAsync();
+				// Run FluentMigrator migrations
+				using var connection = Core.Database.GetConnection(_connectionName);
+				MigrationRunner.RunMigrations(connection);
 
 				IsEnabled = true;
 
@@ -69,7 +65,7 @@ public sealed partial class Plugin
 			if (_modules.HitStatsEnabled)
 				tables.Add(HitsTableName);
 
-			Core.Logger.LogInformation("Database initialized. Tables: {Tables}", string.Join(", ", tables));
+			Core.Logger.LogInformation("Database initialized with migrations. Tables: {Tables}", string.Join(", ", tables));
 		}
 
 		/* ==================== Maintenance ==================== */
@@ -83,14 +79,12 @@ public sealed partial class Plugin
 			{
 				var cutoffTimestamp = (int)DateTimeOffset.UtcNow.AddDays(-_purgeDays).ToUnixTimeSeconds();
 
-				const string sql = $@"
-					DELETE FROM `{TableName}`
-					WHERE `lastconnect` < @CutoffTimestamp AND `lastconnect` > 0;";
-
 				using var connection = Core.Database.GetConnection(_connectionName);
 				connection.Open();
 
-				var deleted = await connection.ExecuteAsync(sql, new { CutoffTimestamp = cutoffTimestamp });
+				// Dommel doesn't support complex WHERE with AND, use Dapper for this
+				var deleted = await connection.DeleteMultipleAsync<PlayerData>(
+					p => p.LastConnect < cutoffTimestamp && p.LastConnect > 0);
 
 				if (deleted > 0)
 					Core.Logger.LogInformation("Purged {Count} inactive players (>{Days} days)", deleted, _purgeDays);
@@ -119,21 +113,32 @@ public sealed partial class Plugin
 
 		private async Task ResetPlayerStatsAsync(string visibleSteamId)
 		{
-			const string sql = $@"
-				UPDATE `{TableName}`
-				SET `value` = @StartPoints,
-					`rank` = 0,
-					`kills` = 0, `deaths` = 0, `shoots` = 0, `hits` = 0,
-					`headshots` = 0, `assists` = 0,
-					`round_win` = 0, `round_lose` = 0, `playtime` = 0,
-					`game_wins` = 0, `game_losses` = 0, `games_played` = 0,
-					`rounds_played` = 0, `damage` = 0
-				WHERE `steam` = @Steam;";
-
 			using var connection = Core.Database.GetConnection(_connectionName);
 			connection.Open();
 
-			await connection.ExecuteAsync(sql, new { Steam = visibleSteamId, StartPoints = _startPoints });
+			var player = await connection.GetAsync<PlayerData>(visibleSteamId);
+			if (player == null)
+				return;
+
+			// Reset all stats
+			player.Value = _startPoints;
+			player.Rank = 0;
+			player.Kills = 0;
+			player.Deaths = 0;
+			player.Shoots = 0;
+			player.Hits = 0;
+			player.Headshots = 0;
+			player.Assists = 0;
+			player.RoundWin = 0;
+			player.RoundLose = 0;
+			player.Playtime = 0;
+			player.GameWins = 0;
+			player.GameLosses = 0;
+			player.GamesPlayed = 0;
+			player.RoundsPlayed = 0;
+			player.Damage = 0;
+
+			await connection.UpdateAsync(player);
 		}
 
 		private async Task ResetPlayerModuleDataAsync(string visibleSteamId)
@@ -143,14 +148,16 @@ public sealed partial class Plugin
 
 			if (_modules.WeaponStatsEnabled)
 			{
-				const string sql = $@"DELETE FROM `{WeaponStatsTableName}` WHERE `steam` = @Steam;";
-				await connection.ExecuteAsync(sql, new { Steam = visibleSteamId });
+				await connection.DeleteMultipleAsync<WeaponStatRecord>(w => w.Steam == visibleSteamId);
 			}
 
 			if (_modules.HitStatsEnabled)
 			{
-				const string sql = $@"DELETE FROM `{HitsTableName}` WHERE `SteamID` = @Steam;";
-				await connection.ExecuteAsync(sql, new { Steam = visibleSteamId });
+				var hitData = await connection.GetAsync<HitData>(visibleSteamId);
+				if (hitData != null)
+				{
+					await connection.DeleteAsync(hitData);
+				}
 			}
 		}
 	}

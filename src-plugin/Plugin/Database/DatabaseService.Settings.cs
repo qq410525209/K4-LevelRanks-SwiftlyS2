@@ -1,4 +1,6 @@
-using Dapper;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Dommel;
 using Microsoft.Extensions.Logging;
 
 namespace K4Ranks;
@@ -14,26 +16,6 @@ public sealed partial class Plugin
 		internal const string SettingsTableName = "lvl_base_settings";
 
 		// =========================================
-		// =           TABLE CREATION
-		// =========================================
-
-		private async Task CreateSettingsTableAsync()
-		{
-			const string sql = $@"
-				CREATE TABLE IF NOT EXISTS `{SettingsTableName}` (
-					`steam` VARCHAR(32) NOT NULL PRIMARY KEY,
-					`messages` TINYINT(1) NOT NULL DEFAULT 1,
-					`summary` TINYINT(1) NOT NULL DEFAULT 0,
-					`rankchanges` TINYINT(1) NOT NULL DEFAULT 1
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-
-			using var connection = Core.Database.GetConnection(_connectionName);
-			connection.Open();
-
-			await connection.ExecuteAsync(sql);
-		}
-
-		// =========================================
 		// =           LOAD OPERATIONS
 		// =========================================
 
@@ -44,19 +26,10 @@ public sealed partial class Plugin
 
 			try
 			{
-				const string sql = $@"
-					SELECT
-						`steam` AS Steam,
-						`messages` AS Messages,
-						`summary` AS Summary,
-						`rankchanges` AS RankChanges
-					FROM `{SettingsTableName}`
-					WHERE `steam` = @Steam;";
-
 				using var connection = Core.Database.GetConnection(_connectionName);
 				connection.Open();
 
-				return await connection.QueryFirstOrDefaultAsync<PlayerSettings>(sql, new { Steam = visibleSteamId });
+				return await connection.GetAsync<PlayerSettings>(visibleSteamId);
 			}
 			catch (Exception ex)
 			{
@@ -76,24 +49,22 @@ public sealed partial class Plugin
 
 			try
 			{
-				const string sql = $@"
-					INSERT INTO `{SettingsTableName}` (`steam`, `messages`, `summary`, `rankchanges`)
-					VALUES (@Steam, @Messages, @Summary, @RankChanges)
-					ON DUPLICATE KEY UPDATE
-						`messages` = @Messages,
-						`summary` = @Summary,
-						`rankchanges` = @RankChanges;";
+				settings.Steam = visibleSteamId;
 
 				using var connection = Core.Database.GetConnection(_connectionName);
 				connection.Open();
 
-				await connection.ExecuteAsync(sql, new
+				var existing = await connection.GetAsync<PlayerSettings>(visibleSteamId);
+				if (existing != null)
 				{
-					Steam = visibleSteamId,
-					settings.Messages,
-					settings.Summary,
-					settings.RankChanges
-				});
+					await connection.UpdateAsync(settings);
+				}
+				else
+				{
+					await connection.InsertAsync(settings);
+				}
+
+				settings.IsDirty = false;
 			}
 			catch (Exception ex)
 			{
@@ -112,29 +83,23 @@ public sealed partial class Plugin
 
 			try
 			{
-				const string sql = $@"
-					INSERT INTO `{SettingsTableName}` (`steam`, `messages`, `summary`, `rankchanges`)
-					VALUES (@Steam, @Messages, @Summary, @RankChanges)
-					ON DUPLICATE KEY UPDATE
-						`messages` = VALUES(`messages`),
-						`summary` = VALUES(`summary`),
-						`rankchanges` = VALUES(`rankchanges`);";
-
 				using var connection = Core.Database.GetConnection(_connectionName);
 				connection.Open();
 
-				var parameters = dirty.Select(p => new
+				foreach (var (steam, settings) in dirty)
 				{
-					p.Steam,
-					p.Settings.Messages,
-					p.Settings.Summary,
-					p.Settings.RankChanges
-				});
-
-				await connection.ExecuteAsync(sql, parameters);
-
-				foreach (var (Steam, Settings) in dirty)
-					Settings.IsDirty = false;
+					settings.Steam = steam;
+					var existing = await connection.GetAsync<PlayerSettings>(steam);
+					if (existing != null)
+					{
+						await connection.UpdateAsync(settings);
+					}
+					else
+					{
+						await connection.InsertAsync(settings);
+					}
+					settings.IsDirty = false;
+				}
 			}
 			catch (Exception ex)
 			{
@@ -151,11 +116,22 @@ public sealed partial class Plugin
 /// <summary>
 /// Player settings model - separate from stats
 /// </summary>
+[Table("lvl_base_settings")]
 public sealed class PlayerSettings
 {
+	[Key]
+	[Column("steam")]
 	public string Steam { get; set; } = "";
+
+	[Column("messages")]
 	public bool Messages { get; set; } = true;
+
+	[Column("summary")]
 	public bool Summary { get; set; } = false;
+
+	[Column("rankchanges")]
 	public bool RankChanges { get; set; } = true;
+
+	[Ignore]
 	public bool IsDirty { get; set; } = false;
 }

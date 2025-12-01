@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Dommel;
 using SwiftlyS2.Shared.SchemaDefinitions;
 
 namespace K4Ranks;
@@ -121,13 +124,32 @@ public sealed class PlayerWeaponStats
 /// <summary>
 /// Database record for weapon stats - LVL Ranks ExStats Weapons compatible
 /// </summary>
+[Table("lvl_base_weapons")]
 public sealed class WeaponStatRecord
 {
+	[Key]
+	[Column("steam")]
+	public string Steam { get; set; } = "";
+
+	[Key]
+	[Column("classname")]
 	public string Classname { get; set; } = "";
+
+	[Column("kills")]
 	public int Kills { get; set; }
+
+	[Column("deaths")]
 	public int Deaths { get; set; }
+
+	[Column("headshots")]
 	public int Headshots { get; set; }
+
+	[Column("hits")]
 	public long Hits { get; set; }
+
+	[Column("shots")]
 	public long Shots { get; set; }
+
+	[Column("damage")]
 	public long Damage { get; set; }
 }
