@@ -45,11 +45,22 @@ jobs:
 
       - name: Restore and Publish
         run: |
-          # Find solution or project file
+          # Find the main project (the one with CreateZip target or ProjectReference)
           if [ -f *.sln ]; then
             PROJECT=$(ls *.sln | head -1)
           else
-            PROJECT=$(find . -name "*.csproj" | head -1)
+            # Find csproj with CreateZip target (main project)
+            PROJECT=$(grep -l "CreateZip" $(find . -name "*.csproj") 2>/dev/null | head -1)
+
+            # Fallback: find csproj with ProjectReference (references other projects)
+            if [ -z "$PROJECT" ]; then
+              PROJECT=$(grep -l "ProjectReference" $(find . -name "*.csproj") 2>/dev/null | head -1)
+            fi
+
+            # Final fallback: first csproj
+            if [ -z "$PROJECT" ]; then
+              PROJECT=$(find . -name "*.csproj" | head -1)
+            fi
           fi
 
           if [ -z "$PROJECT" ]; then
