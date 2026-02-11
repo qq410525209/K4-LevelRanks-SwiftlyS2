@@ -132,6 +132,32 @@ public sealed partial class Plugin
 			}
 		}
 
+		public async Task<int> GetPlayerRankPositionByTimeAsync(string visibleSteamId)
+		{
+			if (!IsEnabled)
+				return -1;
+
+			try
+			{
+				using var connection = Core.Database.GetConnection(_connectionName);
+				connection.Open();
+
+				// Get player's current playtime
+				var player = await connection.GetAsync<PlayerData>(visibleSteamId);
+				if (player == null)
+					return -1;
+
+				// Count players with higher playtime + 1
+				var higherCount = await connection.CountAsync<PlayerData>(p => p.Playtime > player.Playtime);
+				return (int)higherCount + 1;
+			}
+			catch (Exception ex)
+			{
+				Core.Logger.LogError(ex, "Failed to get rank position by time for {Steam}", visibleSteamId);
+				return -1;
+			}
+		}
+
 		public async Task<int> GetTotalPlayersAsync()
 		{
 			if (!IsEnabled)

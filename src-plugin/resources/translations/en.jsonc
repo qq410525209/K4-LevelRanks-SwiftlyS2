@@ -92,6 +92,10 @@
   // Playtime
   "k4.chat.mytime": "You have spent [gold]{0}[default] on this server.",
 
+  // Top list positions
+  "k4.chat.top_position": "You are ranked [gold]#{0}[default] out of [gold]{1} players[default].",
+  "k4.chat.ttop_position": "You are ranked [gold]#{0}[default] out of [gold]{1} players[default] by playtime.",
+
   // ========== ERROR MESSAGES ==========
   "k4.error.data_not_loaded": "[lightred]Your data is still loading. Please wait.",
   "k4.error.target_not_loaded": "[lightred]Target's data is not loaded.",

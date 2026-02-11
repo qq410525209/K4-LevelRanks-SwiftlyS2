@@ -94,6 +94,26 @@ public sealed partial class Plugin
 			return;
 
 		var localizer = Core.Translation.GetPlayerLocalizer(player);
+
+		// Show player's position in chat
+		Task.Run(async () =>
+		{
+			var visibleSteamId = SteamIdParser.ToSteamId(player.SteamID);
+			var position = await Database.GetPlayerRankPositionAsync(visibleSteamId);
+			var totalPlayers = await Database.GetTotalPlayersAsync();
+
+			if (position > 0 && totalPlayers > 0)
+			{
+				Core.Scheduler.NextWorldUpdate(() =>
+				{
+					if (!player.IsValid)
+						return;
+
+					player.SendChat($"{localizer["k4.general.prefix"]} {localizer["k4.chat.top_position", position, totalPlayers]}");
+				});
+			}
+		});
+
 		if (_menuManager != null)
 		{
 			var menu = MenuManager.TopPlayersMenu.Build(_menuManager, player, localizer);
@@ -176,6 +196,26 @@ public sealed partial class Plugin
 			return;
 
 		var localizer = Core.Translation.GetPlayerLocalizer(player);
+
+		// Show player's position in chat
+		Task.Run(async () =>
+		{
+			var visibleSteamId = SteamIdParser.ToSteamId(player.SteamID);
+			var position = await Database.GetPlayerRankPositionByTimeAsync(visibleSteamId);
+			var totalPlayers = await Database.GetTotalPlayersAsync();
+
+			if (position > 0 && totalPlayers > 0)
+			{
+				Core.Scheduler.NextWorldUpdate(() =>
+				{
+					if (!player.IsValid)
+						return;
+
+					player.SendChat($"{localizer["k4.general.prefix"]} {localizer["k4.chat.ttop_position", position, totalPlayers]}");
+				});
+			}
+		});
+
 		if (_menuManager != null)
 		{
 			var menu = MenuManager.TopPlayersTimeMenu.Build(_menuManager, player, localizer);
