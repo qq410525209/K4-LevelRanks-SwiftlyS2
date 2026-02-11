@@ -55,8 +55,8 @@ public sealed partial class MenuManager
 					var rank = manager._ranks.GetRank(p.Points);
 					var position = i + 1;
 
-					// Format: #1 <rank colored name> - <gold points> pts
-					var formattedEntry = $"#{position} <font color='{rank.Hex}'>{p.PlayerName}</font> - <font color='#FFD700'>{p.Points}</font> pts";
+					// Format: #1 <rank colored name> [<rank tag>] - <gold points> pts
+					var formattedEntry = $"#{position} <font color='{rank.Hex}'>{p.PlayerName}</font> <font color='{rank.Hex}'>[{rank.Tag}]</font> - <font color='#FFD700'>{p.Points}</font> pts";
 
 					menuBuilder.AddOption(new TextMenuOption(formattedEntry));
 				}
