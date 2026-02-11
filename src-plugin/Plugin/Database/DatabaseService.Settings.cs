@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Dommel;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
 
 namespace K4Ranks;
 
@@ -54,14 +55,13 @@ public sealed partial class Plugin
 				using var connection = Core.Database.GetConnection(_connectionName);
 				connection.Open();
 
-				var existing = await connection.GetAsync<PlayerSettings>(visibleSteamId);
-				if (existing != null)
-				{
-					await connection.UpdateAsync(settings);
-				}
-				else
+				try
 				{
 					await connection.InsertAsync(settings);
+				}
+				catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry error
+				{
+					await connection.UpdateAsync(settings);
 				}
 
 				settings.IsDirty = false;
@@ -89,15 +89,16 @@ public sealed partial class Plugin
 				foreach (var (steam, settings) in dirty)
 				{
 					settings.Steam = steam;
-					var existing = await connection.GetAsync<PlayerSettings>(steam);
-					if (existing != null)
-					{
-						await connection.UpdateAsync(settings);
-					}
-					else
+
+					try
 					{
 						await connection.InsertAsync(settings);
 					}
+					catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry error
+					{
+						await connection.UpdateAsync(settings);
+					}
+
 					settings.IsDirty = false;
 				}
 			}

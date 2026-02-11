@@ -1,5 +1,6 @@
 using Dommel;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
 
 namespace K4Ranks;
 
@@ -46,14 +47,13 @@ public sealed partial class Plugin
 				using var connection = Core.Database.GetConnection(_connectionName);
 				connection.Open();
 
-				var existing = await connection.GetAsync<PlayerData>(data.Steam);
-				if (existing != null)
-				{
-					await connection.UpdateAsync(data);
-				}
-				else
+				try
 				{
 					await connection.InsertAsync(data);
+				}
+				catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry error
+				{
+					await connection.UpdateAsync(data);
 				}
 
 				data.IsDirty = false;
@@ -84,14 +84,13 @@ public sealed partial class Plugin
 				{
 					data.LastConnect = now;
 
-					var existing = await connection.GetAsync<PlayerData>(data.Steam);
-					if (existing != null)
-					{
-						await connection.UpdateAsync(data);
-					}
-					else
+					try
 					{
 						await connection.InsertAsync(data);
+					}
+					catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry error
+					{
+						await connection.UpdateAsync(data);
 					}
 
 					data.IsDirty = false;

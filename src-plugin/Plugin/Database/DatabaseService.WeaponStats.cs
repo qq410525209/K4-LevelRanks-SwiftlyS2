@@ -1,5 +1,6 @@
 using Dommel;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
 
 namespace K4Ranks;
 
@@ -69,18 +70,13 @@ public sealed partial class Plugin
 						Damage = stat.Damage
 					};
 
-					// Check if exists - Dommel doesn't support composite keys well for Get
-					var existing = (await connection.SelectAsync<WeaponStatRecord>(
-						w => w.Steam == visibleSteamId && w.Classname == stat.WeaponClassname
-					)).FirstOrDefault();
-
-					if (existing != null)
-					{
-						await connection.UpdateAsync(record);
-					}
-					else
+					try
 					{
 						await connection.InsertAsync(record);
+					}
+					catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry error
+					{
+						await connection.UpdateAsync(record);
 					}
 
 					stat.IsDirty = false;
