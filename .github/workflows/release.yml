@@ -177,9 +177,9 @@ jobs:
           # Get the most recent existing tag
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-          # Build release body using heredoc (prevents command substitution)
+          # Build release body using heredoc
           {
-            echo "body<<'EOF'"
+            echo "body<<EOF"
             if [ "$CHANGELOG_EXISTS" = true ] && [ -s /tmp/changelog_section.txt ]; then
               cat /tmp/changelog_section.txt
             else
