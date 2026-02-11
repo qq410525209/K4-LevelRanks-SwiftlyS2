@@ -159,6 +159,9 @@ public sealed partial class Plugin
 
 		var localizer = Core.Translation.GetPlayerLocalizer(player);
 
+		if (!ValidateAdminPermission(player, localizer))
+			return;
+
 		if (ctx.Args.Length < 2)
 		{
 			player.SendChat($"{localizer["k4.general.prefix"]} {localizer["k4.usage.setpoints"]}");
@@ -202,6 +205,9 @@ public sealed partial class Plugin
 
 		var localizer = Core.Translation.GetPlayerLocalizer(player);
 
+		if (!ValidateAdminPermission(player, localizer))
+			return;
+
 		if (ctx.Args.Length < 2)
 		{
 			player.SendChat($"{localizer["k4.general.prefix"]} {localizer["k4.usage.givepoints"]}");
@@ -232,6 +238,9 @@ public sealed partial class Plugin
 			return;
 
 		var localizer = Core.Translation.GetPlayerLocalizer(player);
+
+		if (!ValidateAdminPermission(player, localizer))
+			return;
 
 		if (ctx.Args.Length < 2)
 		{
@@ -331,6 +340,17 @@ public sealed partial class Plugin
 	}
 
 	/* ==================== Helpers ==================== */
+
+	private bool ValidateAdminPermission(IPlayer player, SwiftlyS2.Shared.Translation.ILocalizer localizer)
+	{
+		if (!Core.Permission.PlayerHasPermission(player.SteamID, "k4-levelranks.admin"))
+		{
+			player.SendChat($"{localizer["k4.general.prefix"]} {localizer["k4.error.no_permission"]}");
+			return false;
+		}
+
+		return true;
+	}
 
 	private bool ValidatePlayerData(IPlayer player, PlayerData? data)
 	{
