@@ -162,10 +162,9 @@ public sealed partial class Plugin
 				connection.Open();
 
 				var allPlayers = await connection.GetAllAsync<PlayerData>();
-				return allPlayers
+				return [.. allPlayers
 					.OrderByDescending(p => p.Value)
-					.Take(count)
-					.ToList();
+					.Take(count)];
 			}
 			catch (Exception ex)
 			{
@@ -185,10 +184,9 @@ public sealed partial class Plugin
 				connection.Open();
 
 				var allPlayers = await connection.GetAllAsync<PlayerData>();
-				return allPlayers
+				return [.. allPlayers
 					.OrderByDescending(p => p.Playtime)
-					.Take(count)
-					.ToList();
+					.Take(count)];
 			}
 			catch (Exception ex)
 			{

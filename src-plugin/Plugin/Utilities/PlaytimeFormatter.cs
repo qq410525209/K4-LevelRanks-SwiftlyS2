@@ -13,8 +13,8 @@ internal static class PlaytimeFormatter
 	public static string Format(long playtimeSeconds)
 	{
 		var days = playtimeSeconds / 86400;
-		var hours = (playtimeSeconds % 86400) / 3600;
-		var minutes = (playtimeSeconds % 3600) / 60;
+		var hours = playtimeSeconds % 86400 / 3600;
+		var minutes = playtimeSeconds % 3600 / 60;
 
 		if (days > 0)
 			return $"{days}d {hours}h {minutes}m";
