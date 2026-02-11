@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.1]
+
+### Fixed
+
+- **Critical issue fix**: Fixed `ObjectDisposedException` when players disconnect
+  - Migrated from game events (`EventPlayerActivate`, `EventPlayerDisconnect`) to SwiftlyS2 API events
+  - Now using `Core.Event.OnClientPutInServer` for player connect handling
+  - Now using `Core.Event.OnClientDisconnected` for player disconnect handling
+  - API events fire before player object disposal, preventing unobserved task exceptions
+
 ## [v1.1.0]
 
 ### Added
